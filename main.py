@@ -1,22 +1,39 @@
-from classes import HeadHunterAPI, Connector, DBManager
+from classes import HeadHunterAPI, Connector
+from db_classes import DBManager
 
 
 def main():
     vacancies_json = []
 
-    employers_id = ['31430', '22494', '80', '6769', '8550', '3529', '97026', '1122462', '23040', '230159']
+    employers_id = ['80',  # Alfa-Bank
+                    '1740',  # Яндекс
+                    '8550',  # ЦФТ
+                    '3529',  # СБЕР
+                    '22494',  # Neoflex
+                    '78638',  # Tinkoff
+                    '23040',  # Открытие
+                    '172616',  # Evola
+                    '598471',  # Evrone
+                    '4300631']  # Kvando
+
+    for employer_id in employers_id:
+        hh = HeadHunterAPI(employer_id)
+        hh.get_vacancies(pages_count=1)
+        vacancies_json.extend(hh.get_formatted_vacancies())
 
     connector = Connector(vacancies_json=vacancies_json)
     db = DBManager()
+    HeadHunterAPI.from_json_to_csv()
     while True:
         command = input(
-            "---\n"
+            "\n------------------------------------\n"
             "1 - Список всех компаний и количество вакансий у каждой компании; \n"
             "2 - Список всех вакансий с указанием названия компании, названия вакансии, зарплаты и ссылки; \n"
             "3 - Средняя зарплата по вакансиям; \n"
             "4 - Список всех вакансий, у которых зарплата выше средней по всем вакансиям; \n"
             "5 - Список всех вакансий по ключевому слову; \n"
-            "6 - Обновить данные csv-файла; ” \n"
+            "6 - Вывести полный список вакансий из json-файла; \n"
+            "7 - Создать новые таблицы в БД и загрузить данные из csv-файла; \n"
             "exit - Выйти. \n"
         )
         if command.lower() == 'exit':
@@ -44,12 +61,8 @@ def main():
                 print(vacancy, end='\n\n')
 
         elif command.lower() == '7':
-            for employer_id in employers_id:
-                hh = HeadHunterAPI(employer_id)
-                hh.get_vacancies(pages_count=1)
-                vacancies_json.extend(hh.get_formatted_vacancies())
-
-                hh.from_json_to_csv()
+            DBManager.create_tables_with_data()
+            print('Таблицы с актуальными данными созданы.')
         else:
             print('Введена неверная команда.')
 
