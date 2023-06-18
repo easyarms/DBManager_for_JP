@@ -5,6 +5,10 @@ import psycopg2
 
 
 class DBManager:
+    """Класс для подключения к базе данных,
+    загрузки обновлённых таблиц
+    и получения данных по вакансиям из списка компаний"""
+
     def __init__(self):
         self.conn = psycopg2.connect(
             host='localhost',
