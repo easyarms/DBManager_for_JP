@@ -116,7 +116,7 @@ class DBManager:
         '''
         self.cur.execute(query)
         result = self.cur.fetchone()
-        return f'{round(result[0])} RUB'
+        return result[0]
 
     def get_vacancies_with_higher_salary(self):
         """Метод для вывода всех вакансий, у которых зарплата выше средней"""

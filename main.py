@@ -55,7 +55,7 @@ def main():
             print(db.get_all_vacancies())
 
         elif command.lower() == '5':
-            print(db.get_avg_salary())
+            print(f'{round(db.get_avg_salary())} RUB')
 
         elif command.lower() == '6':
             print(db.get_vacancies_with_higher_salary())
