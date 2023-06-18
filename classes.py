@@ -1,6 +1,5 @@
+import csv
 import json
-import os
-from abc import ABC, abstractmethod
 
 import requests
 
@@ -11,23 +10,17 @@ class ParsingError(Exception):
 
 
 class Vacancy:
-    __slots__ = ('id', 'title', 'url', 'salary_from', 'salary_to', 'employer', 'api')
+    __slots__ = ('id', 'title', 'url', 'salary_from', 'salary_to', 'employer_id', 'employer_name', 'api')
 
-    def __init__(self, vacancy_id, title, url, salary_from, salary_to, employer, api):
+    def __init__(self, vacancy_id, title, url, salary_from, salary_to, employer_id, employer_name, api):
         self.id = vacancy_id
         self.title = title
         self.url = url
         self.salary_from = salary_from
         self.salary_to = salary_to
-        self.employer = employer
+        self.employer_id = employer_id
+        self.employer_name = employer_name
         self.api = api
-
-    def __gt__(self, other):
-        if not other.salary_from:
-            return True
-        elif not self.salary_from:
-            return True
-        return self.salary_from >= other.salary_from
 
     def __str__(self):
         salary_from = f'Oт {self.salary_from}' if self.salary_from else ''
@@ -36,14 +29,14 @@ class Vacancy:
             salary_from = 'Не указана'
 
         return f'Вакансия: \"{self.title}\"' \
-               f'\nКомпания: \"{self.employer}\"' \
+               f'\nКомпания: \"{self.employer_name}, {self.employer_id}\"' \
                f'\nЗарплата: {salary_from} {salary_to}' \
                f'\nURL: {self.url}'
 
 
 class Connector:
-    def __init__(self, keyword, vacancies_json):
-        self.__filename = f"{keyword.title()}.json"
+    def __init__(self, vacancies_json):
+        self.__filename = 'vacancies.json'
         self.insert(vacancies_json)
 
     def insert(self, vacancies_json):
@@ -58,60 +51,26 @@ class Connector:
                              x['url'],
                              x['salary_from'],
                              x['salary_to'],
-                             x['employer'],
+                             x['employer_id'],
+                             x['employer_name'],
                              x['api']) for x in data]
         return vacancies
 
-    def sorted_vacancies_by_salary_from_asc(self):
-        vacancies = self.select()
-        vacancies = sorted(vacancies)
-        return vacancies
 
-    def sorted_vacancies_by_salary_from_desc(self):
-        vacancies = self.select()
-        vacancies = sorted(vacancies, reverse=True)
-        return vacancies
+class HeadHunterAPI:
 
-    def sorted_vacancies_by_salary_to_asc(self):
-        vacancies = self.select()
-        vacancies = sorted(vacancies, key=lambda x: x.salary_to if x.salary_to else 0)
-        return vacancies
-
-
-class Engine(ABC):
-
-    @abstractmethod
-    def get_request(self):
-        pass
-
-    @abstractmethod
-    def get_vacancies(self):
-        pass
-
-
-class HeadHunterAPI(Engine):
-
-    def __init__(self, keyword):
+    def __init__(self, employer_id):
         self.__headers = {
             "User-Agent": "Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion"
         }
 
         self.__params = {
-            "text": keyword,
-            "page": 0,
-            "per_page": 100
+            'page': 0,
+            'employer_id': employer_id,
+            'per_page': 100
         }
 
         self.__vacancies = []
-
-    @staticmethod
-    def get_salary(salary):
-        formatted_salary = [None, None]
-        if salary and salary['from'] and salary['from'] != 0:
-            formatted_salary[0] = salary['from'] if salary['currency'].lower() == 'rur' else salary['from'] * 78
-        if salary and salary['to'] and salary['to'] != 0:
-            formatted_salary[1] = salary['to'] if salary['currency'].lower() == 'rur' else salary['to'] * 78
-        return formatted_salary
 
     def get_request(self):
         response = requests.get('https://api.hh.ru/vacancies',
@@ -131,7 +90,8 @@ class HeadHunterAPI(Engine):
                 'url': vacancy['alternate_url'],
                 'salary_from': salary_from,
                 'salary_to': salary_to,
-                'employer': vacancy['employer']['name'],
+                'employer_id': vacancy['employer']['id'],
+                'employer_name': vacancy['employer']['name'],
                 'api': 'HeadHunter'
             })
         return formatted_vacancies
@@ -148,3 +108,35 @@ class HeadHunterAPI(Engine):
             print(f"Найдено: {len(values)} вакансий.")
             self.__vacancies.extend(values)
             self.__params['page'] += 1
+
+    @staticmethod
+    def get_salary(salary):
+        formatted_salary = [None, None]
+        if salary and salary['from'] and salary['from'] != 0:
+            formatted_salary[0] = salary['from'] if salary['currency'].lower() == 'rur' else salary['from'] * 78
+        if salary and salary['to'] and salary['to'] != 0:
+            formatted_salary[1] = salary['to'] if salary['currency'].lower() == 'rur' else salary['to'] * 78
+        return formatted_salary
+
+    @staticmethod
+    def from_json_to_csv():
+        with open('vacancies.json', 'r') as json_file:
+            vacancies = json.load(json_file)
+
+        with open('data.csv', 'w', newline='') as csv_file:
+            writer = csv.writer(csv_file)
+
+            if csv_file.tell() == 0:
+                headers = ['employer_id', 'employer_name', 'salary_from', 'salary_to', 'id', 'title', 'url']
+                writer.writerow(headers)
+
+            for vacancy in vacancies:
+                employer_id = vacancy['employer_id']
+                employer_name = vacancy['employer_name']
+                salary_from = vacancy['salary_from']
+                salary_to = vacancy['salary_to']
+                id = vacancy['id']
+                title = vacancy['title']
+                url = vacancy['url']
+                row = [employer_id, employer_name, salary_from, salary_to, id, title, url]
+                writer.writerow(row)

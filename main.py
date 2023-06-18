@@ -4,34 +4,28 @@ from classes import HeadHunterAPI, Connector
 def main():
     vacancies_json = []
 
-    keyword = "Python"
-    hh = HeadHunterAPI(keyword)
-    hh.get_vacancies(pages_count=1)
-    vacancies_json.extend(hh.get_formatted_vacancies())
+    employers_id = ['31430', '22494', '80', '6769', '8550', '3529', '97026', '1122462', '23040', '230159']
+    for employer_id in employers_id:
+        hh = HeadHunterAPI(employer_id)
+        hh.get_vacancies(pages_count=1)
+        vacancies_json.extend(hh.get_formatted_vacancies())
 
-    connector = Connector(keyword=keyword, vacancies_json=vacancies_json)
+        hh.from_json_to_csv()
 
+    connector = Connector(vacancies_json=vacancies_json)
     while True:
         command = input(
-            "1 - Вывести список вакансий; \n"
-            "2 - Сортировка по минимальной зарплате; \n"
-            "3 - Сортировка по минимальной зарплате (DESC); \n"
-            "4 - Сортировка по максимальной зарплате; \n"
-            "exit - Выйти. \n"
+            "show - Вывести список всех вакансий \n"
+            "exit - Выйти \n"
         )
         if command.lower() == 'exit':
             break
-        elif command.lower() == '1':
+        elif command.lower() == 'show':
             vacancies = connector.select()
-        elif command.lower() == '2':
-            vacancies = connector.sorted_vacancies_by_salary_from_asc()
-        elif command.lower() == '3':
-            vacancies = connector.sorted_vacancies_by_salary_from_desc()
-        elif command.lower() == '4':
-            vacancies = connector.sorted_vacancies_by_salary_to_asc()
-
-        for vacancy in vacancies:
-            print(vacancy, end='\n\n')
+            for vacancy in vacancies:
+                print(vacancy, end='\n\n')
+        else:
+            print('Введена неверная команда.')
 
 
 if __name__ == '__main__':
