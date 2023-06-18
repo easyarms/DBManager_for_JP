@@ -23,8 +23,9 @@ class DBManager:
 
     @classmethod
     def create_tables_with_data(cls):
-        """Метод для заполнения данными таблиц в БД Postgres
-        и заполнения их данными из csv-файла."""
+        """Статический метод для заполнения данными таблиц в БД Postgres
+        и заполнения их данными из csv-файла"""
+
         conn = psycopg2.connect(host='localhost', database='postgres', user='postgres', password=os.getenv("DB_PASSWORD"))
 
         try:
@@ -67,7 +68,8 @@ class DBManager:
                         salary_to = int(row[3]) if row[3] != '' else None
                         cur = conn.cursor()
                         cur.execute(
-                            "INSERT INTO vacancies (title, id, salary_from, salary_to, employers_id, employers_name, url)"
+                            "INSERT INTO vacancies ("
+                            "title, id, salary_from, salary_to, employers_id, employers_name, url)"
                             "VALUES (%s, %s, %s, %s, %s, %s, %s)",
                             (row[5], row[4], salary_from, salary_to, row[0], row[1], row[6])
                         )
@@ -76,6 +78,8 @@ class DBManager:
             conn.close()
 
     def get_companies_and_vacancies_count(self):
+        """Метод для вывода списка всех компаний и количество вакансий у каждой компании"""
+
         query = '''
             SELECT employers_name, COUNT(*) 
             FROM vacancies 
@@ -87,6 +91,9 @@ class DBManager:
         return result
 
     def get_all_vacancies(self):
+        """Метод для вывода всех вакансий с указанием
+        названия компании, названия вакансии, зарплаты и ссылки"""
+
         query = '''
             SELECT e.employers_name, v.title, v.salary_from, v.salary_to, v.url 
             FROM vacancies v
@@ -98,6 +105,7 @@ class DBManager:
         return result
 
     def get_avg_salary(self):
+        """Метод для вывода средней зарплаты по всем вакансиям"""
         query = '''
             SELECT AVG(salary_from + salary_to)/2 
             FROM vacancies
@@ -107,6 +115,8 @@ class DBManager:
         return f'{round(result[0])} RUB'
 
     def get_vacancies_with_higher_salary(self):
+        """Метод для вывода всех вакансий, у которых зарплата выше средней"""
+
         avg_salary = self.get_avg_salary()
         query = '''
             SELECT e.employers_name, v.title, v.salary_from, v.salary_to, v.url 
@@ -120,6 +130,8 @@ class DBManager:
         return result
 
     def get_vacancies_with_keyword(self, keyword):
+        """Метод для вывода всех вакансий по ключевому слову keyword"""
+
         query = '''
             SELECT e.employers_name, v.title, v.salary_from, v.salary_to, v.url 
             FROM vacancies v 
