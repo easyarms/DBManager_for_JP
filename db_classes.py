@@ -1,4 +1,5 @@
 import csv
+import os
 
 import psycopg2
 
@@ -9,7 +10,7 @@ class DBManager:
             host='localhost',
             database='postgres',
             user='postgres',
-            password='BETEP2112'
+            password=os.getenv("DB_PASSWORD")
         )
         self.cur = self.conn.cursor()
 
@@ -24,7 +25,7 @@ class DBManager:
     def create_tables_with_data(cls):
         """Метод для заполнения данными таблиц в БД Postgres
         и заполнения их данными из csv-файла."""
-        conn = psycopg2.connect(host='localhost', database='postgres', user='postgres', password='BETEP2112')
+        conn = psycopg2.connect(host='localhost', database='postgres', user='postgres', password=os.getenv("DB_PASSWORD"))
 
         try:
             with conn:
